@@ -44,10 +44,10 @@ class MyHomePage extends StatelessWidget {
             ),
             Expanded(
               child: Container(
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.red, width: 2),
-                  borderRadius: BorderRadius.circular(8),
-                ),
+                // decoration: BoxDecoration(
+                //   border: Border.all(color: Colors.red, width: 2),
+                //   borderRadius: BorderRadius.circular(8),
+                // ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
