@@ -10,10 +10,6 @@ An open source Flutter application to quickly generate strong and secure passwor
 - Android support (iOS coming soon)
 - One-tap copy to clipboard
 
-## Screenshot
-
-![screenshot](./screenshot.png)
-
 ## Installation
 
 1. **Clone the repository:**
