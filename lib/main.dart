@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:math';
 
 void main() {
   runApp(const MyApp());
@@ -34,6 +35,52 @@ class _MyHomePage extends State<MyHomePage> {
   bool _hasUpper = false;
   bool _hasNumbers = false;
   bool _hasSpecial = false;
+  int _length = 12;
+
+  String _generatedPwd = '';
+
+  /// Plages de caractères à utiliser
+  List<List<int>> getSelectedCharRanges() {
+    List<List<int>> ranges = [];
+    if (_hasLower) ranges.add([97, 122]); // a-z
+    if (_hasUpper) ranges.add([65, 90]); // A-Z
+    if (_hasNumbers) ranges.add([48, 57]); // 0-9
+    if (_hasSpecial) {
+      ranges.addAll([
+        [33, 47], // !"#$%&'()*+,-./
+        [58, 64], // :;<=>?@
+        [91, 96], // [\]^_`
+        [123, 126], // {|}~
+      ]);
+    }
+    return ranges;
+  }
+
+  String generatePwd(int nbChars) {
+    List<List<int>> ranges = getSelectedCharRanges();
+    if (ranges.isEmpty) return '';
+
+    Random rnd = Random.secure();
+
+    List<int> chars = [];
+
+    for (final range in ranges) {
+      final codeUnit = range[0] + rnd.nextInt(range[1] - range[0] + 1);
+      chars.add(codeUnit);
+    }
+
+    final remaining = nbChars - chars.length;
+
+    for (int i = 0; i < remaining; ++i) {
+      final range = ranges[rnd.nextInt(ranges.length)];
+      final codeUnit = range[0] + rnd.nextInt(range[1] - range[0] + 1);
+      chars.add(codeUnit);
+    }
+
+    chars.shuffle(rnd);
+
+    return String.fromCharCodes(chars);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,12 +101,6 @@ class _MyHomePage extends State<MyHomePage> {
               ),
             ),
             Expanded(
-              // child:
-              // Container(
-              // decoration: BoxDecoration(                           // visu pour m'aider
-              //   border: Border.all(color: Colors.red, width: 2),
-              //   borderRadius: BorderRadius.circular(8),
-              // ),
               child: Column(
                 spacing: 60,
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -69,7 +110,7 @@ class _MyHomePage extends State<MyHomePage> {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Text(
-                        "Mot de passe généré",
+                        _generatedPwd.isNotEmpty ? _generatedPwd : "Mot de passe généré",
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 20,
@@ -78,7 +119,6 @@ class _MyHomePage extends State<MyHomePage> {
                     ],
                   ),
                   IntrinsicWidth(
-                    // (width: fit-content)
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -100,32 +140,34 @@ class _MyHomePage extends State<MyHomePage> {
                             border: OutlineInputBorder(),
                           ),
                           onChanged: (value) {
-                            int length = int.tryParse(value) ?? 1;
-                            print("Nouvelle longueur : $length");
+                            setState(() {
+                              _length = int.tryParse(value) ?? 1;
+                            });
                           },
                         ),
                         OptionCheckBox(
                           label: 'Minuscules',
                           value: _hasLower,
-                          onChanged: (val) =>
-                              setState(() => (_hasLower = val!)),
+                          onChanged: (value) =>
+                              setState(() => (_hasLower = value!)),
                         ),
                         OptionCheckBox(
                           label: 'Majuscules',
                           value: _hasUpper,
-                          onChanged: (val) => setState(() => _hasUpper = val!),
+                          onChanged: (value) =>
+                              setState(() => _hasUpper = value!),
                         ),
                         OptionCheckBox(
                           label: 'Chiffres',
                           value: _hasNumbers,
-                          onChanged: (val) =>
-                              setState(() => _hasNumbers = val!),
+                          onChanged: (value) =>
+                              setState(() => _hasNumbers = value!),
                         ),
                         OptionCheckBox(
                           label: 'Caractères spéciaux',
                           value: _hasSpecial,
-                          onChanged: (val) =>
-                              setState(() => (_hasSpecial = val!)),
+                          onChanged: (value) =>
+                              setState(() => (_hasSpecial = value!)),
                         ),
                       ],
                     ),
@@ -136,7 +178,20 @@ class _MyHomePage extends State<MyHomePage> {
                     children: [
                       ElevatedButton(
                         onPressed: () {
-                          print("azAZ".codeUnits);
+                          final ranges = getSelectedCharRanges();
+                          if (_length < ranges.length) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                    "Longueur insuffisante pour couvrir tous les types sélectionnés."),
+                              ),
+                            );
+                            return;
+                          }
+                          final pwd = generatePwd(_length);
+                          setState(() {
+                            _generatedPwd = pwd;
+                          });
                         },
                         child: Row(
                           children: const [
@@ -147,7 +202,24 @@ class _MyHomePage extends State<MyHomePage> {
                         ),
                       ),
                       ElevatedButton(
-                        onPressed: () {},
+                        onPressed: () {
+                          if (_generatedPwd.isNotEmpty) {
+                            Clipboard.setData(ClipboardData(text: _generatedPwd));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text("Mot de passe copié dans le presse-papiers !"),
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text("Aucun mot de passe à copier."),
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                          }
+                        },
                         child: Row(
                           children: const [
                             Icon(Icons.copy),
@@ -156,12 +228,10 @@ class _MyHomePage extends State<MyHomePage> {
                           ],
                         ),
                       ),
-                      // MyLabeledCheckbox(label: "Test", value: true, onChanged: (val) {})
                     ],
                   ),
                 ],
               ),
-              // ),
             ),
           ],
         ),
