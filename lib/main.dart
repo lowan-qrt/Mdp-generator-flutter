@@ -103,7 +103,7 @@ class _MyHomePage extends State<MyHomePage> {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(widget.title),
       ),
-      body: Center(
+      body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -115,152 +115,169 @@ class _MyHomePage extends State<MyHomePage> {
               ),
             ),
             Expanded(
-              // Main middle part
-              child: Padding(
-                padding: const EdgeInsets.only(top: 16),
-                child: SingleChildScrollView(
-                  child: Column(
-                    spacing: 60,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Row(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return SingleChildScrollView(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: constraints.maxHeight,
+                      ),
+                      child: Column(
+                        spacing: 60,
                         mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Text(
-                            _generatedPwd.isNotEmpty
-                                ? _generatedPwd
-                                : "Mot de passe généré",
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 20,
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16.0,
+                                  ),
+                                  child: Text(
+                                    _generatedPwd.isNotEmpty
+                                        ? _generatedPwd
+                                        : "Mot de passe généré",
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 20,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          IntrinsicWidth(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 16,
+                                  ),
+                                  child: Text(
+                                    "Options de sécurité",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                TextField(
+                                  keyboardType: TextInputType.number,
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.digitsOnly,
+                                  ],
+                                  decoration: InputDecoration(
+                                    labelText: "Longueur",
+                                    hintText: "Ex: 12",
+                                    border: OutlineInputBorder(),
+                                  ),
+                                  controller: _lengthController,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _length = int.tryParse(value) ?? 1;
+                                    });
+                                  },
+                                ),
+                                OptionCheckBox(
+                                  label: 'Minuscules',
+                                  value: _hasLower,
+                                  onChanged: (value) =>
+                                      setState(() => (_hasLower = value!)),
+                                ),
+                                OptionCheckBox(
+                                  label: 'Majuscules',
+                                  value: _hasUpper,
+                                  onChanged: (value) =>
+                                      setState(() => _hasUpper = value!),
+                                ),
+                                OptionCheckBox(
+                                  label: 'Chiffres',
+                                  value: _hasNumbers,
+                                  onChanged: (value) =>
+                                      setState(() => _hasNumbers = value!),
+                                ),
+                                OptionCheckBox(
+                                  label: 'Caractères spéciaux',
+                                  value: _hasSpecial,
+                                  onChanged: (value) =>
+                                      setState(() => (_hasSpecial = value!)),
+                                ),
+                              ],
                             ),
+                          ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            spacing: 10,
+                            children: [
+                              ElevatedButton(
+                                onPressed: () {
+                                  final ranges = getSelectedCharRanges();
+                                  if (_length < ranges.length) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          "Longueur insuffisante pour couvrir tous les types sélectionnés.",
+                                        ),
+                                      ),
+                                    );
+                                    return;
+                                  }
+                                  final pwd = generatePwd(_length);
+                                  setState(() {
+                                    _generatedPwd = pwd;
+                                  });
+                                },
+                                child: Row(
+                                  children: const [
+                                    Icon(Icons.auto_awesome),
+                                    SizedBox(width: 8),
+                                    Text('Générer'),
+                                  ],
+                                ),
+                              ),
+                              ElevatedButton(
+                                onPressed: () {
+                                  if (_generatedPwd.isNotEmpty) {
+                                    Clipboard.setData(
+                                      ClipboardData(text: _generatedPwd),
+                                    );
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          "Mot de passe copié dans le presse-papiers !",
+                                        ),
+                                        duration: Duration(seconds: 2),
+                                      ),
+                                    );
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          "Aucun mot de passe à copier.",
+                                        ),
+                                        duration: Duration(seconds: 2),
+                                      ),
+                                    );
+                                  }
+                                },
+                                child: Row(
+                                  children: const [
+                                    Icon(Icons.copy),
+                                    SizedBox(width: 8),
+                                    Text('Copier'),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                      IntrinsicWidth(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              child: Text(
-                                "Options de sécurité",
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                            TextField(
-                              keyboardType: TextInputType.number,
-                              inputFormatters: [
-                                FilteringTextInputFormatter.digitsOnly,
-                              ],
-                              decoration: InputDecoration(
-                                labelText: "Longueur",
-                                hintText: "Ex: 12",
-                                border: OutlineInputBorder(),
-                              ),
-                              controller: _lengthController,
-                              onChanged: (value) {
-                                setState(() {
-                                  _length = int.tryParse(value) ?? 1;
-                                });
-                              },
-                            ),
-                            OptionCheckBox(
-                              label: 'Minuscules',
-                              value: _hasLower,
-                              onChanged: (value) =>
-                                  setState(() => (_hasLower = value!)),
-                            ),
-                            OptionCheckBox(
-                              label: 'Majuscules',
-                              value: _hasUpper,
-                              onChanged: (value) =>
-                                  setState(() => _hasUpper = value!),
-                            ),
-                            OptionCheckBox(
-                              label: 'Chiffres',
-                              value: _hasNumbers,
-                              onChanged: (value) =>
-                                  setState(() => _hasNumbers = value!),
-                            ),
-                            OptionCheckBox(
-                              label: 'Caractères spéciaux',
-                              value: _hasSpecial,
-                              onChanged: (value) =>
-                                  setState(() => (_hasSpecial = value!)),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        spacing: 10,
-                        children: [
-                          ElevatedButton(
-                            onPressed: () {
-                              final ranges = getSelectedCharRanges();
-                              if (_length < ranges.length) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      "Longueur insuffisante pour couvrir tous les types sélectionnés.",
-                                    ),
-                                  ),
-                                );
-                                return;
-                              }
-                              final pwd = generatePwd(_length);
-                              setState(() {
-                                _generatedPwd = pwd;
-                              });
-                            },
-                            child: Row(
-                              children: const [
-                                Icon(Icons.auto_awesome),
-                                SizedBox(width: 8),
-                                Text('Générer'),
-                              ],
-                            ),
-                          ),
-                          ElevatedButton(
-                            onPressed: () {
-                              if (_generatedPwd.isNotEmpty) {
-                                Clipboard.setData(
-                                  ClipboardData(text: _generatedPwd),
-                                );
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      "Mot de passe copié dans le presse-papiers !",
-                                    ),
-                                    duration: Duration(seconds: 2),
-                                  ),
-                                );
-                              } else {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      "Aucun mot de passe à copier.",
-                                    ),
-                                    duration: Duration(seconds: 2),
-                                  ),
-                                );
-                              }
-                            },
-                            child: Row(
-                              children: const [
-                                Icon(Icons.copy),
-                                SizedBox(width: 8),
-                                Text('Copier'),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
+                    ),
+                  );
+                },
               ),
             ),
           ],
